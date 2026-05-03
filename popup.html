@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Page Summarizer</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header__logo">
+      <span class="header__icon">✦</span>
+      <span class="header__title">AI Summarizer</span>
+    </div>
+    <button class="btn-icon" id="settingsBtn" title="Settings" aria-label="Open settings">
+      ⚙️
+    </button>
+  </header>
+
+  <!-- Settings Panel -->
+  <div class="panel" id="settingsPanel" hidden>
+    <h2 class="panel__title">Settings</h2>
+    <div class="form-group">
+      <label for="apiKeyInput" class="form-label">
+        Gemini API Key
+      </label>
+      <div class="input-row">
+        <input
+          type="password"
+          id="apiKeyInput"
+          class="form-input"
+          placeholder="Paste your API key here"
+          aria-label="Gemini API Key"
+        />
+        <button class="btn btn--small btn--primary" id="saveKeyBtn">
+          Save
+        </button>
+      </div>
+      <p class="form-hint">
+        Get your free key at
+        <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>
+      </p>
+    </div>
+    <p class="key-status" id="keyStatus"></p>
+  </div>
+
+  <!-- Main Panel -->
+  <div class="panel" id="mainPanel">
+
+    <!-- Page Info -->
+    <div class="page-info">
+      <p class="page-info__title" id="pageTitle">Loading page...</p>
+      <p class="page-info__url" id="pageUrl"></p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button class="btn btn--primary btn--full" id="summarizeBtn">
+        <span class="btn__icon">✦</span>
+        Summarize This Page
+      </button>
+      <button class="btn btn--ghost btn--full" id="clearBtn" hidden>
+        Clear Summary
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading" id="loadingState" hidden>
+      <div class="spinner"></div>
+      <p class="loading__text">Analyzing page content...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-box" id="errorBox" hidden>
+      <span class="error-box__icon">⚠️</span>
+      <p class="error-box__text" id="errorText"></p>
+    </div>
+
+    <!-- Cache Badge -->
+    <div class="cache-badge" id="cacheBadge" hidden>
+      ⚡ Loaded from cache
+    </div>
+
+    <!-- Summary Output -->
+    <div class="summary" id="summaryOutput" hidden>
+
+      <div class="summary__section" id="summarySection">
+        <h3 class="summary__heading">
+          <span>📄</span> Summary
+        </h3>
+        <p class="summary__text" id="summaryText"></p>
+      </div>
+
+      <div class="summary__section" id="keyPointsSection">
+        <h3 class="summary__heading">
+          <span>🎯</span> Key Points
+        </h3>
+        <ul class="summary__list" id="keyPointsList"></ul>
+      </div>
+
+      <div class="summary__section" id="keyInsightsSection">
+        <h3 class="summary__heading">
+          <span>💡</span> Key Insights
+        </h3>
+        <ul class="summary__list" id="keyInsightsList"></ul>
+      </div>
+
+      <div class="summary__footer">
+        <span class="reading-time" id="readingTime"></span>
+        <button class="btn btn--small btn--ghost" id="copyBtn">
+          📋 Copy
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
