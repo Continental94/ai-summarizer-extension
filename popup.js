@@ -26,21 +26,12 @@ let currentSummary = '';
 
 // ── Init ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Get current tab info
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   currentTab = tab;
 
-  // Show page title and URL
   pageTitle.textContent = tab.title || 'Unknown Page';
   pageUrl.textContent = tab.url || '';
 
-  // Check for cached summary
-  const cached = await sendMessage({ type: 'GET_CACHED', url: tab.url });
-  if (cached && cached.summary) {
-    showSummary(cached.summary, true);
-  }
-
-  // Check if API key exists
   const keyResult = await sendMessage({ type: 'GET_API_KEY' });
   if (!keyResult.key) {
     showError('No API key found. Click ⚙️ to add your Gemini API key.');
@@ -56,7 +47,6 @@ settingsBtn.addEventListener('click', () => {
 
   if (!isHidden) return;
 
-  // Load existing key into input (masked)
   sendMessage({ type: 'GET_API_KEY' }).then((result) => {
     if (result.key) {
       apiKeyInput.placeholder = '••••••••••••••••••••••••••••••••';
@@ -75,13 +65,18 @@ saveKeyBtn.addEventListener('click', async () => {
     return;
   }
 
-  await sendMessage({ type: 'SAVE_API_KEY', key });
+  const result = await sendMessage({ type: 'SAVE_API_KEY', key });
+  if (result.error) {
+    keyStatus.textContent = result.error;
+    keyStatus.className = 'key-status error';
+    return;
+  }
+
   apiKeyInput.value = '';
   apiKeyInput.placeholder = '••••••••••••••••••••••••••••••••';
   keyStatus.textContent = '✓ API key saved successfully!';
   keyStatus.className = 'key-status success';
 
-  // Switch back to main panel after saving
   setTimeout(() => {
     settingsPanel.hidden = true;
     mainPanel.hidden = false;
@@ -91,34 +86,56 @@ saveKeyBtn.addEventListener('click', async () => {
 
 // ── Summarize ─────────────────────────────────
 summarizeBtn.addEventListener('click', async () => {
-  // Check API key first
   const keyResult = await sendMessage({ type: 'GET_API_KEY' });
   if (!keyResult.key) {
     showError('Please add your Gemini API key in Settings ⚙️');
     return;
   }
 
-  // Show loading
   showLoading();
 
   try {
-    // Extract content from page
     let content = '';
     try {
       const extracted = await chrome.tabs.sendMessage(currentTab.id, {
         type: 'EXTRACT_CONTENT',
-      });
-      content = extracted?.content || '';
+      }).catch(() => null);
+
+      if (extracted?.content) {
+        content = extracted.content;
+      } else {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: currentTab.id },
+          func: () => {
+            const unwanted = ['script','style','nav','header','footer','aside','iframe','noscript'];
+            const body = document.body.cloneNode(true);
+            unwanted.forEach(tag => {
+              body.querySelectorAll(tag).forEach(el => el.remove());
+            });
+            const selectors = ['article','main','[role="main"]','.post-content','.entry-content','#content','.content'];
+            for (const sel of selectors) {
+              const el = body.querySelector(sel);
+              if (el && (el.innerText || '').trim().length > 100) {
+                return (el.innerText || '').trim();
+              }
+            }
+            const paras = Array.from(body.querySelectorAll('p'))
+              .map(p => (p.innerText || '').trim())
+              .filter(t => t.length > 40);
+            if (paras.length > 2) return paras.join('\n\n');
+            return (document.body.innerText || '').slice(0, 8000).trim();
+          }
+        });
+        content = results?.[0]?.result || '';
+      }
     } catch (e) {
-      // Content script may not be injected on special pages
-      throw new Error('Cannot summarize this page. Try on a regular article or blog post.');
+      throw new Error('Cannot access this page. Try on a regular website.');
     }
 
     if (!content || content.length < 100) {
       throw new Error('Not enough content found on this page to summarize.');
     }
 
-    // Send to background for AI processing
     const result = await sendMessage({
       type: 'SUMMARIZE',
       content,
@@ -174,7 +191,7 @@ function hideAll() {
 
 function showError(message) {
   hideAll();
-  errorText.textContent = message;
+  errorText.textContent = sanitize(message);
   errorBox.hidden = false;
 }
 
@@ -186,37 +203,35 @@ function showSummary(rawSummary, fromCache = false) {
   hideAll();
   currentSummary = rawSummary;
 
-  // Parse the structured response
   const parsed = parseSummary(rawSummary);
 
-  // Fill in summary
-  summaryText.textContent = parsed.summary;
+  // Summary - sanitized
+  summaryText.textContent = sanitize(parsed.summary);
 
-  // Fill key points
+  // Key points - sanitized
   keyPointsList.innerHTML = '';
   parsed.keyPoints.forEach((point) => {
     const li = document.createElement('li');
-    li.textContent = point;
+    li.textContent = sanitize(point);
     keyPointsList.appendChild(li);
   });
 
-  // Fill key insights
+  // Key insights - sanitized
   keyInsightsList.innerHTML = '';
   parsed.keyInsights.forEach((insight) => {
     const li = document.createElement('li');
-    li.textContent = insight;
+    li.textContent = sanitize(insight);
     keyInsightsList.appendChild(li);
   });
 
-  // Reading time
-  readingTime.textContent = parsed.readingTime || '';
+  // Reading time + word count
+  const wordCount = rawSummary.split(/\s+/).filter(w => w.length > 0).length;
+  readingTime.textContent = (parsed.readingTime || '') + ` · ${wordCount} words`;
 
-  // Show cache badge
   if (fromCache) {
     cacheBadge.hidden = false;
   }
 
-  // Show output
   summaryOutput.hidden = false;
   clearBtn.hidden = false;
   summarizeBtn.hidden = true;
@@ -232,11 +247,9 @@ function parseSummary(text) {
   };
 
   try {
-    // Extract Summary
     const summaryMatch = text.match(/SUMMARY:\s*([\s\S]*?)(?=KEY POINTS:|$)/i);
     if (summaryMatch) result.summary = summaryMatch[1].trim();
 
-    // Extract Key Points
     const keyPointsMatch = text.match(/KEY POINTS:\s*([\s\S]*?)(?=KEY INSIGHTS:|$)/i);
     if (keyPointsMatch) {
       result.keyPoints = keyPointsMatch[1]
@@ -245,7 +258,6 @@ function parseSummary(text) {
         .filter((l) => l.length > 0);
     }
 
-    // Extract Key Insights
     const insightsMatch = text.match(/KEY INSIGHTS:\s*([\s\S]*?)(?=READING TIME:|$)/i);
     if (insightsMatch) {
       result.keyInsights = insightsMatch[1]
@@ -254,11 +266,9 @@ function parseSummary(text) {
         .filter((l) => l.length > 0);
     }
 
-    // Extract Reading Time
     const readingMatch = text.match(/READING TIME:\s*([\s\S]*?)$/i);
     if (readingMatch) result.readingTime = '⏱ ' + readingMatch[1].trim();
 
-    // Fallback if parsing fails
     if (!result.summary) result.summary = text.slice(0, 300);
 
   } catch (e) {
@@ -266,6 +276,17 @@ function parseSummary(text) {
   }
 
   return result;
+}
+
+// ── XSS Sanitization ──────────────────────────
+function sanitize(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // ── Message Helper ────────────────────────────

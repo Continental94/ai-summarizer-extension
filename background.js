@@ -1,4 +1,52 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Validate message structure
+  if (!message || typeof message !== 'object' || !message.type) {
+    sendResponse({ error: 'Invalid message format' });
+    return true;
+  }
+
+  // Only accept messages from extension itself
+  if (sender.id !== chrome.runtime.id && !sender.tab) {
+    sendResponse({ error: 'Unauthorized sender' });
+    return true;
+  }
+
+  if (message.type === 'SUMMARIZE') {
+    // Validate content
+    if (!message.content || typeof message.content !== 'string') {
+      sendResponse({ error: 'Invalid content' });
+      return true;
+    }
+    handleSummarize(message.content, message.url)
+      .then(sendResponse)
+      .catch((error) => sendResponse({ error: error.message }));
+    return true;
+  }
+
+  if (message.type === 'SAVE_API_KEY') {
+    // Validate API key format
+    if (!message.key || typeof message.key !== 'string' || message.key.length < 10) {
+      sendResponse({ error: 'Invalid API key format' });
+      return true;
+    }
+    chrome.storage.local.set({ geminiApiKey: message.key }, () => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
+  if (message.type === 'GET_API_KEY') {
+    chrome.storage.local.get(['geminiApiKey'], (result) => {
+      sendResponse({ key: result.geminiApiKey || null });
+    });
+    return true;
+  }
+
+  sendResponse({ error: 'Unknown message type' });
+  return true;
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SUMMARIZE') {
     handleSummarize(message.content, message.url)
       .then(sendResponse)
