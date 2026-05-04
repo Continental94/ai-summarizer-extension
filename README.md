@@ -36,12 +36,12 @@ git clone https://github.com/Continental94/ai-summarizer-extension.git
 Step 2 — Get a Gemini API Key
 1. Go to [aistudio.google.com](https://aistudio.google.com)
 2. Click **"Get API Key"**
-3. Click **"Create API Key"**
+3. Click "Create API Key"
 4. Copy the key
 
 Step 3 — Load the extension in Chrome
 1. Open Chrome and go to `chrome://extensions`
-2. Toggle **"Developer mode"** ON (top right)
+2. Toggle "Developer mode" ON (top right)
 3. Click **"Load unpacked"**
 4. Select the cloned `ai-summarizer-extension` folder
 5. The extension will appear in your toolbar
@@ -50,12 +50,12 @@ Step 3 — Load the extension in Chrome
 1. Click the extension icon in Chrome toolbar
 2. Click the ⚙️ settings icon
 3. Paste your Gemini API key
-4. Click **"Save"**
+4. Click "Save"
 
 Step 5 — Summarize any page
 1. Navigate to any article or blog post
 2. Click the extension icon
-3. Click **"Summarize This Page"**
+3. Click "Summarize This Page"
 4. Wait a few seconds for the AI summary
 
 🏗️ Architecture
@@ -72,7 +72,7 @@ ai-summarizer-extension/
 └── icon128.png
 
 How it works
-1. User clicks **"Summarize This Page"** in popup
+1. User clicks "Summarize This Page" in popup
 2. `popup.js` sends message to `content.js` to extract page text
 3. `content.js` strips navigation/ads and returns clean article content
 4. `popup.js` sends content to `background.js` via Chrome messaging
@@ -80,10 +80,10 @@ How it works
 6. AI returns structured summary which is displayed in popup
 
  🤖 AI Integration
-- **Provider:** Google Gemini AI (`gemini-2.5-flash` model)
-- **Endpoint:** `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`
-- **Why Gemini:** Free tier available, fast responses, excellent summarization
-- **Security:** API key stored in `chrome.storage.local`, never in source code
+- Provider: Google Gemini AI (`gemini-2.5-flash` model)
+- Endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`
+- Why Gemini: Free tier available, fast responses, excellent summarization
+- Security: API key stored in `chrome.storage.local`, never in source code
 
  ⚖️ Trade-offs
 - Local extension only (not on Chrome Web Store)
