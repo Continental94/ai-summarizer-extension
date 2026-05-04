@@ -3,7 +3,7 @@ AI Page Summarizer — Chrome Extension
 A Chrome Extension (Manifest V3) that extracts content from any webpage and uses Google Gemini AI to generate structured summaries instantly.
 
 🎥 Demo Video
-[Watch Demo](YOUR_DEMO_VIDEO_LINK_HERE)
+[Watch Demo] https://www.loom.com/share/471f390b9e0d424085072312f277eaa8
 
 ✨ Features
 - 📄 Bullet-point summary of any webpage
