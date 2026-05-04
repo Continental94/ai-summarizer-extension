@@ -154,11 +154,25 @@ summarizeBtn.addEventListener('click', async () => {
 });
 
 // ── Clear ─────────────────────────────────────
+// ── Clear ─────────────────────────────────────
 clearBtn.addEventListener('click', () => {
-  hideAll();
+  // Reset all content
+  summaryText.textContent = '';
+  keyPointsList.innerHTML = '';
+  keyInsightsList.innerHTML = '';
+  readingTime.textContent = '';
+  currentSummary = '';
+
+  // Hide everything
+  summaryOutput.hidden = true;
+  cacheBadge.hidden = true;
+  errorBox.hidden = true;
+  loadingState.hidden = true;
+
+  // Reset buttons
   clearBtn.hidden = true;
   summarizeBtn.hidden = false;
-  currentSummary = '';
+  summarizeBtn.disabled = false;
 });
 
 // ── Copy ─────────────────────────────────────
